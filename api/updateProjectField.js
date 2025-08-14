@@ -1,45 +1,47 @@
+import { getAuthenticatedClient } from '../../lib/github';
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Only POST allowed' });
+    return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
-  const { pat, projectId, itemId, fieldId, value } = req.body;
+  try {
+    // Note: 'value' can be a string, number, or an object for different field types.
+    const { githubPat, projectId, itemId, fieldId, value } = req.body;
+    const graphql = getAuthenticatedClient(githubPat);
 
-  if (!pat || !projectId || !itemId || !fieldId || !value) {
-    return res.status(400).json({ error: 'Missing required fields: pat, projectId, itemId, fieldId, value' });
-  }
-
-  const mutation = `
-    mutation {
-      updateProjectV2ItemFieldValue(input: {
-        projectId: "${projectId}",
-        itemId: "${itemId}",
-        fieldId: "${fieldId}",
-        value: {
-          singleSelectOptionId: "${value}"
+    const { updateProjectV2ItemFieldValue } = await graphql(
+      `
+        mutation updateField(
+          $projectId: ID!
+          $itemId: ID!
+          $fieldId: ID!
+          $value: ProjectV2FieldValue!
+        ) {
+          updateProjectV2ItemFieldValue(
+            input: {
+              projectId: $projectId
+              itemId: $itemId
+              fieldId: $fieldId
+              value: $value
+            }
+          ) {
+            projectV2Item {
+              id
+            }
+          }
         }
-      }) {
-        projectV2Item {
-          id
-        }
+      `,
+      {
+        projectId,
+        itemId,
+        fieldId,
+        value: { singleSelectOptionId: value }, // This structure changes based on field type!
       }
-    }
-  `;
+    );
 
-  const response = await fetch('https://api.github.com/graphql', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${pat}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ query: mutation })
-  });
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    return res.status(response.status).json({ error: data });
+    res.status(200).json(updateProjectV2ItemFieldValue.projectV2Item);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
-
-  return res.status(200).json(data);
 }

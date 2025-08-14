@@ -1,56 +1,43 @@
+import { getAuthenticatedClient } from '../../lib/github';
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Only POST allowed' });
+    return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
-  const { pat, projectId } = req.body;
+  try {
+    const { githubPat, projectId } = req.body;
+    const graphql = getAuthenticatedClient(githubPat);
 
-  if (!pat || !projectId) {
-    return res.status(400).json({ error: 'Missing required fields: pat, projectId' });
-  }
-
-  const query = `
-    query {
-      node(id: "${projectId}") {
-        ... on ProjectV2 {
-          items(first: 50) {
-            nodes {
-              id
-              content {
-                ... on Issue {
-                  title
-                  url
-                  number
-                  state
-                }
-                ... on PullRequest {
-                  title
-                  url
-                  number
-                  state
+    const { node } = await graphql(
+      `
+        query listProjectItems($projectId: ID!) {
+          node(id: $projectId) {
+            ... on ProjectV2 {
+              items(first: 50) {
+                nodes {
+                  id
+                  content {
+                    ... on Issue {
+                      title
+                      url
+                    }
+                    ... on PullRequest {
+                      title
+                      url
+                    }
+                  }
                 }
               }
             }
           }
         }
-      }
-    }
-  `;
+      `,
+      { projectId }
+    );
 
-  const response = await fetch('https://api.github.com/graphql', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${pat}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ query })
-  });
-
-  const data = await response.json();
-
-  if (!response.ok) {
-    return res.status(response.status).json({ error: data });
+    res.status(200).json(node.items.nodes);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
-
-  return res.status(200).json(data);
 }
