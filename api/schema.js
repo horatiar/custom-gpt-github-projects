@@ -1,4 +1,3 @@
-
 export default function handler(req, res) {
   res.status(200).json({
     openapi: "3.1.0",
@@ -9,12 +8,12 @@ export default function handler(req, res) {
     },
     servers: [
       {
-        url: "https://custom-gpt-github-projects.vercel.app", // Base URL of the deployment
+        url: "https://custom-gpt-github-projects.vercel.app",
         description: "Live Vercel deployment"
       }
     ],
     paths: {
-      "/api/github-graphql": { // This now correctly matches your file name
+      "/api/github-graphql": {
         post: {
           operationId: "proxyGraphQL",
           summary: "Execute a GitHub GraphQL query",
@@ -23,7 +22,7 @@ export default function handler(req, res) {
             content: {
               "application/json": {
                 schema: {
-                  "$ref": "#/components/schemas/GraphQLRequest" // Reference the component schema
+                  "$ref": "#/components/schemas/GraphQLRequest"
                 }
               }
             }
@@ -34,9 +33,8 @@ export default function handler(req, res) {
               content: {
                 "application/json": {
                   schema: {
-                    type: "object",
-                    additionalProperties: true,
-                    description: "The JSON response from the GitHub GraphQL API."
+                    // Use a reference to the new, more specific response schema
+                    "$ref": "#/components/schemas/GraphQLResponse"
                   }
                 }
               }
@@ -67,11 +65,31 @@ export default function handler(req, res) {
             },
             variables: {
               type: "object",
-              additionalProperties: true, // Allows any structure for variables
+              additionalProperties: true,
               description: "An object containing variables for the GraphQL query."
             }
           },
           required: ["query"]
+        },
+        // New schema to define the GraphQL response structure
+        GraphQLResponse: {
+          type: "object",
+          description: "The JSON response from the GitHub GraphQL API.",
+          properties: {
+            data: {
+              type: "object",
+              additionalProperties: true,
+              description: "The data returned by the successful GraphQL operation."
+            },
+            errors: {
+              type: "array",
+              description: "An array of errors that occurred during the operation.",
+              items: {
+                type: "object",
+                additionalProperties: true
+              }
+            }
+          }
         }
       }
     },
