@@ -7,8 +7,8 @@ export default async function handler(req, res) {
 
   try {
     // Note: 'value' can be a string, number, or an object for different field types.
-    const { githubPat, projectId, itemId, fieldId, value } = req.body;
-    const graphql = getAuthenticatedClient(githubPat);
+    const { projectId, itemId, fieldId, value } = req.body;
+    const graphql = getAuthenticatedClient(req);
 
     const { updateProjectV2ItemFieldValue } = await graphql(
       `

@@ -6,8 +6,8 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { githubPat, projectId } = req.body;
-    const graphql = getAuthenticatedClient(githubPat);
+    const { projectId } = req.body;
+    const graphql = getAuthenticatedClient(req);
 
     const { node } = await graphql(
       `

@@ -6,8 +6,11 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { githubPat, owner } = req.body;
-    const graphql = getAuthenticatedClient(githubPat);
+    const { owner } = req.body;
+    if (!owner) {
+      return res.status(400).json({ error: "Request body must include 'owner'." });
+    }
+    const graphql = getAuthenticatedClient(req);
 
     const { user } = await graphql(
       `
