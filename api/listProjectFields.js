@@ -6,9 +6,9 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { owner } = req.body;
-    if (!owner) {
-      return res.status(400).json({ error: "Request body must include 'owner'." });
+    const { owner, projectId } = req.body;
+    if (!owner || !projectId) {
+      return res.status(400).json({ error: "Request body must include 'owner' and 'projectId'." });
     }
     const graphql = getAuthenticatedClient(req);
 
